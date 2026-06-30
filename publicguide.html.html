@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>WirdiApp — Guide pas à pas</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Amiri:wght@400;700&display=swap');
+
+:root{
+  --dark:#1A3028; --dark2:#2D5243; --green:#3D7A5E; --green-l:#6AAF8B;
+  --gold:#C8A96E; --bg:#F0F8F4; --border:#D6EDE3; --mute:#8AB8A4;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--dark);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;padding:32px 16px 80px;}
+.wrap{max-width:900px;margin:0 auto;}
+
+.intro{text-align:center;margin-bottom:40px;}
+.intro-badge{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1.5px solid var(--border);border-radius:30px;padding:6px 16px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--green);margin-bottom:18px;}
+.intro h1{font-size:28px;font-weight:700;color:var(--dark);margin-bottom:8px;letter-spacing:-.01em;}
+.intro h1 span{color:var(--gold);}
+.intro p{font-size:14px;color:var(--mute);max-width:480px;margin:0 auto;line-height:1.6;}
+
+.stepnav{display:flex;justify-content:center;gap:8px;margin:28px 0 36px;flex-wrap:wrap;}
+.stepnav button{background:#fff;border:1.5px solid var(--border);color:var(--mute);padding:8px 18px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;}
+.stepnav button.active{background:var(--dark);border-color:var(--dark);color:#fff;}
+.stepnav button:hover:not(.active){border-color:var(--green);color:var(--green);}
+
+.stage{min-height:580px;}
+.slide{display:none;opacity:0;transform:translateY(10px);animation:fadeUp .35s ease forwards;}
+.slide.active{display:grid;grid-template-columns:280px 1fr;gap:36px;align-items:start;}
+@keyframes fadeUp{to{opacity:1;transform:translateY(0);}}
+@media(max-width:680px){.slide.active{grid-template-columns:1fr;}}
+
+/* Phone */
+.phone-col{display:flex;flex-direction:column;align-items:center;}
+.phone{width:262px;height:548px;background:var(--dark);border-radius:38px;padding:12px;box-shadow:0 24px 56px rgba(26,48,40,.28);position:relative;}
+.phone::before{content:'';position:absolute;top:12px;left:50%;transform:translateX(-50%);width:80px;height:18px;background:var(--dark);border-radius:0 0 14px 14px;z-index:5;}
+.screen{width:100%;height:100%;background:var(--bg);border-radius:28px;overflow:hidden;display:flex;flex-direction:column;}
+
+/* Mini app chrome */
+.mh{background:linear-gradient(160deg,#1A3028,#2D5243);padding:26px 14px 14px;display:flex;align-items:center;gap:10px;}
+.mh-logo{width:28px;height:28px;border-radius:50%;background:rgba(61,122,94,.3);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--gold);flex-shrink:0;}
+.mh-brand{font-size:13px;font-weight:700;color:#fff;}
+.mh-brand span{color:var(--gold);}
+.mh-sub{font-family:'Amiri',serif;font-size:9px;color:rgba(255,255,255,.45);direction:rtl;}
+.mh-bell{margin-left:auto;font-size:14px;}
+.mt{display:flex;padding:0 14px;border-bottom:1.5px solid var(--border);background:var(--bg);}
+.mt-tab{padding:9px 0;margin-right:14px;font-size:8px;font-weight:700;color:var(--mute);letter-spacing:.06em;text-transform:uppercase;border-bottom:2px solid transparent;}
+.mt-tab.on{color:var(--dark);border-bottom-color:var(--green);}
+.mb{flex:1;padding:12px 14px;overflow:hidden;}
+
+/* Week strip */
+.ws{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:12px;}
+.wd{display:flex;flex-direction:column;align-items:center;gap:3px;}
+.wd-l{font-size:5.5px;font-weight:700;color:var(--mute);text-transform:uppercase;}
+.wd-c{width:21px;height:21px;border-radius:50%;border:1.2px solid #C8DFD5;display:flex;align-items:center;justify-content:center;font-size:5.5px;font-weight:700;color:#B8DECA;}
+.wd-c.has{border-color:var(--green);color:var(--green);background:#EBF7F1;}
+.wd-c.partial{border-color:var(--gold);color:var(--gold);background:#FDF6EB;}
+.wd-c.full{background:var(--green);border-color:var(--green);color:#fff;}
+.wd-c.today{box-shadow:0 0 0 1.5px var(--gold);}
+.wd-c.sel{outline:1.5px solid var(--dark);outline-offset:2px;}
+
+/* Loop bar */
+.lb{margin-bottom:12px;}
+.lb-h{display:flex;justify-content:space-between;font-size:6.5px;font-weight:700;color:var(--green-l);text-transform:uppercase;margin-bottom:4px;}
+.lb-f{color:var(--dark);font-weight:600;}
+.lb-t{height:4px;background:var(--border);border-radius:3px;overflow:hidden;}
+.lb-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--green-l));border-radius:3px;}
+
+/* Day card */
+.dc{background:#fff;border:1.2px solid var(--border);border-radius:11px;overflow:hidden;}
+.dc-h{padding:9px 11px;border-bottom:1px solid #EBF7F1;display:flex;justify-content:space-between;align-items:center;}
+.dc-name{font-size:9px;font-weight:700;}
+.dc-count{font-size:8px;font-weight:700;color:var(--green-l);}
+.dc-item{display:flex;align-items:center;gap:6px;padding:7px 11px;border-bottom:1px solid #F5FAF7;}
+.dc-item:last-of-type{border-bottom:none;}
+.check{width:13px;height:13px;border-radius:4px;border:1.2px solid #C8DFD5;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:7px;color:#fff;}
+.check.on{background:var(--green);border-color:var(--green);}
+.dc-label{font-size:7.5px;font-weight:600;color:var(--dark);}
+.dc-label.struck{text-decoration:line-through;color:#B8DECA;}
+.dc-sub{font-size:6px;color:var(--mute);margin-top:1px;}
+.badge{font-size:5.5px;font-weight:700;padding:1.5px 5px;border-radius:5px;}
+.badge.h{background:#EBF7F1;color:var(--green);}
+.badge.s{background:#FDF6EB;color:var(--gold);}
+.dc-add{display:flex;gap:5px;padding:7px 11px;background:#FAFFFE;border-top:1.2px solid #EBF7F1;align-items:center;}
+.tog{display:flex;background:#EBF7F1;border-radius:5px;padding:1.5px;font-size:5.5px;font-weight:700;}
+.tog span{padding:2.5px 6px;border-radius:4px;color:var(--mute);}
+.tog span.on{background:var(--green);color:#fff;}
+.sel-fake{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:4px 6px;font-size:6px;color:var(--dark);}
+.plus{width:17px;height:17px;border-radius:5px;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;}
+
+/* Programme */
+.circ-card{background:#fff;border:1.2px solid var(--border);border-radius:13px;padding:13px;display:flex;flex-direction:column;align-items:center;margin-bottom:11px;}
+.circ-title{font-size:6.5px;font-weight:700;color:var(--green-l);text-transform:uppercase;margin-bottom:9px;}
+.circ-wrap{position:relative;display:flex;align-items:center;justify-content:center;margin-bottom:2px;}
+.circ-center{position:absolute;display:flex;flex-direction:column;align-items:center;}
+.circ-pct{font-size:18px;font-weight:300;color:var(--dark);line-height:1;}
+.circ-sub{font-size:6.5px;color:var(--mute);font-weight:600;margin-top:2px;}
+.circ-legend{display:flex;gap:10px;margin-top:9px;font-size:6px;font-weight:600;color:var(--green-l);}
+.circ-legend span{display:flex;align-items:center;gap:3px;}
+.cdot{width:5px;height:5px;border-radius:50%;display:inline-block;}
+.cdot.h{background:var(--green);}
+.cdot.s{background:var(--gold);}
+
+.db{margin-bottom:9px;}
+.db-l{font-size:6.5px;font-weight:700;color:var(--green-l);text-transform:uppercase;display:flex;align-items:center;gap:5px;margin-bottom:5px;}
+.db-l .ln{flex:1;height:1px;background:var(--border);}
+.dtag{font-size:5.5px;background:var(--green);color:#fff;padding:1.5px 5px;border-radius:5px;}
+.dtag.p{background:var(--gold);}
+.pills{display:flex;flex-wrap:wrap;gap:3px;}
+.pill{border-radius:8px;padding:2.5px 7px;font-size:6px;font-weight:600;}
+.pill.h{background:#EBF7F1;color:#2D5243;border:1px solid #B8DECA;}
+.pill.s{background:#FDF6EB;color:#8B6914;border:1px solid #EDD9A3;}
+.pill.done{opacity:.5;text-decoration:line-through;}
+
+/* Historique */
+.hw{background:#fff;border:1.2px solid var(--border);border-radius:9px;padding:9px 11px;margin-bottom:7px;}
+.hw-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;}
+.hw-l{font-size:7.5px;font-weight:700;color:var(--dark);}
+.hw-s{font-size:5.5px;color:var(--mute);margin-top:1px;}
+.hbadge{font-size:5.5px;font-weight:700;padding:2px 6px;border-radius:7px;}
+.hbadge.c{background:#EBF7F1;color:var(--green);border:1px solid #B8DECA;}
+.hbadge.p{background:#FDF6EB;color:var(--gold);border:1px solid #EDD9A3;}
+.hbadge.cur{background:var(--dark);color:#fff;}
+.hdots{display:flex;gap:3px;}
+.hdot{width:15px;height:15px;border-radius:50%;border:1px solid #E5EDE9;background:#F5FAF7;display:flex;align-items:center;justify-content:center;font-size:5px;font-weight:700;color:#C8DFD5;}
+.hdot.done{background:var(--green);border-color:var(--green);color:#fff;}
+
+/* Notif */
+.np{background:#fff;border:1.2px solid var(--border);border-radius:11px;padding:11px;}
+.np-t{font-size:8.5px;font-weight:700;margin-bottom:3px;}
+.np-s{font-size:6px;color:var(--mute);line-height:1.5;margin-bottom:9px;}
+.np-st{display:flex;align-items:center;gap:5px;font-size:6.5px;padding:6px 8px;border-radius:7px;background:#EBF7F1;color:var(--dark2);margin-bottom:8px;}
+.np-dot{width:5px;height:5px;border-radius:50%;background:var(--green);}
+.np-time{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.np-time-l{font-size:6px;color:var(--green-l);font-weight:600;}
+.np-time-v{background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:4px 8px;font-size:7px;color:var(--dark);font-weight:600;}
+.np-btn{width:100%;padding:7px;border-radius:7px;background:var(--green);color:#fff;font-size:6.5px;font-weight:700;text-align:center;margin-bottom:5px;}
+.np-btn2{width:100%;padding:6px;border-radius:7px;background:#EBF7F1;color:var(--green);font-size:6.5px;font-weight:700;text-align:center;border:1px solid #B8DECA;}
+
+/* Text col */
+.tc{padding-top:4px;}
+.tc-ey{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;}
+.tc-title{font-size:24px;font-weight:700;color:var(--dark);margin-bottom:14px;letter-spacing:-.01em;}
+.tc-desc{font-size:14px;color:#4A5D54;line-height:1.7;margin-bottom:22px;}
+.tc-list{list-style:none;display:flex;flex-direction:column;gap:14px;}
+.tc-list li{display:flex;gap:12px;align-items:flex-start;font-size:13.5px;color:var(--dark);line-height:1.55;}
+.num{width:22px;height:22px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px;}
+.tc-list strong{color:var(--dark2);}
+.tip{background:#EBF7F1;border:1px solid #B8DECA;border-radius:10px;padding:12px 14px;margin-top:20px;font-size:12.5px;color:var(--dark2);line-height:1.6;}
+.tip strong{color:var(--green);}
+
+/* Nav */
+.bnav{display:flex;justify-content:space-between;align-items:center;margin-top:40px;border-top:1.5px solid var(--border);padding-top:22px;}
+.nbtn{background:#fff;border:1.5px solid var(--border);color:var(--dark);padding:10px 22px;border-radius:24px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;}
+.nbtn:hover{border-color:var(--green);color:var(--green);}
+.nbtn:disabled{opacity:.3;cursor:default;}
+.nbtn:disabled:hover{border-color:var(--border);color:var(--dark);}
+.nbtn.p{background:var(--dark);border-color:var(--dark);color:#fff;}
+.nbtn.p:hover{background:var(--dark2);color:#fff;}
+.dots{display:flex;gap:6px;}
+.dots span{width:7px;height:7px;border-radius:50%;background:var(--border);transition:all .25s;}
+.dots span.active{background:var(--green);width:20px;border-radius:4px;}
+footer{text-align:center;margin-top:50px;font-size:11px;color:var(--mute);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="intro">
+    <div class="intro-badge">✦ Guide d'utilisation</div>
+    <h1>Comment fonctionne <span>WirdiApp</span></h1>
+    <p>Tout ce qu'il faut savoir pour suivre ta révision du Coran, onglet par onglet.</p>
+  </div>
+
+  <div class="stepnav" id="stepnav"></div>
+  <div class="stage" id="stage"></div>
+
+  <div class="bnav">
+    <button class="nbtn" id="prev">← Précédent</button>
+    <div class="dots" id="dots"></div>
+    <button class="nbtn p" id="next">Suivant →</button>
+  </div>
+  <footer>WirdiApp — مراجعة القرآن الكريم</footer>
+</div>
+
+<script>
+const slides = [
+  {
+    eyebrow:"Onglet 1", title:"Semaine",
+    desc:"Ton tableau de bord quotidien. Tu vois les 7 jours de la semaine en un coup d'œil, et tu coches chaque hizb ou sourate individuellement — même si tu révises en plusieurs fois dans la journée.",
+    list:[
+      "<strong>Tape sur un jour</strong> pour l'ouvrir et voir son programme",
+      "<strong>Coche chaque item</strong> dès que tu l'as révisé — un par un",
+      "Le cercle du jour devient <strong>orange (partiel)</strong> ou <strong>vert (complet)</strong>",
+      "La <strong>barre de boucle</strong> se remplit au fur et à mesure de la semaine"
+    ],
+    tip:"💡 Tu n'as pas besoin de tout faire d'un coup. Coche le matin ce que tu as révisé, et recoche le soir le reste.",
+    phone:`
+      <div class="mh"><div class="mh-logo">✦</div><div><div class="mh-brand">Wirdi<span>App</span></div><div class="mh-sub">مراجعة القرآن الكريم</div></div><div class="mh-bell">🔔</div></div>
+      <div class="mt"><div class="mt-tab on">Semaine</div><div class="mt-tab">Programme</div><div class="mt-tab">Historique</div></div>
+      <div class="mb">
+        <div class="ws">
+          <div class="wd"><span class="wd-l">Lun</span><div class="wd-c full">✓</div></div>
+          <div class="wd"><span class="wd-l">Mar</span><div class="wd-c partial sel">1/2</div></div>
+          <div class="wd"><span class="wd-l">Mer</span><div class="wd-c has">0/2</div></div>
+          <div class="wd"><span class="wd-l">Jeu</span><div class="wd-c has today">0/1</div></div>
+          <div class="wd"><span class="wd-l">Ven</span><div class="wd-c has">0/2</div></div>
+          <div class="wd"><span class="wd-l">Sam</span><div class="wd-c"></div></div>
+          <div class="wd"><span class="wd-l">Dim</span><div class="wd-c"></div></div>
+        </div>
+        <div class="lb">
+          <div class="lb-h"><span>Boucle de la semaine</span><span class="lb-f">3/10</span></div>
+          <div class="lb-t"><div class="lb-fill" style="width:30%"></div></div>
+        </div>
+        <div class="dc">
+          <div class="dc-h"><span class="dc-name">Mardi</span><span class="dc-count">1/2 validés</span></div>
+          <div class="dc-item">
+            <div class="check on">✓</div>
+            <div style="flex:1"><div class="dc-label struck">Hizb 5</div><div class="dc-sub">Juz 3</div></div>
+            <span class="badge h">Hizb</span>
+          </div>
+          <div class="dc-item">
+            <div class="check"></div>
+            <div style="flex:1"><div class="dc-label">Al-Kahf (18)</div><div class="dc-sub">P. 293–304</div></div>
+            <span class="badge s">Sourate</span>
+          </div>
+          <div class="dc-add">
+            <div class="tog"><span class="on">Hizb</span><span>Sourate</span></div>
+            <div class="sel-fake">Hizb 6 ▾</div>
+            <div class="plus">+</div>
+          </div>
+        </div>
+      </div>
+    `
+  },
+  {
+    eyebrow:"Onglet 2", title:"Programme",
+    desc:"Ta vue d'ensemble personnelle. Le cercle à deux anneaux se base uniquement sur ta propre boucle — les hizbs et sourates que toi tu as assignés, pas sur la totalité du Coran.",
+    list:[
+      "<strong>Anneau vert (extérieur)</strong> = tes hizbs révisés sur ceux que tu as planifiés",
+      "<strong>Anneau doré (intérieur)</strong> = tes sourates révisées sur celles que tu as planifiées",
+      "La <strong>légende</strong> affiche ton ratio exact (ex: 3/15 hizbs, 1/3 sourates)",
+      "En dessous, le <strong>programme complet</strong> jour par jour avec les items cochés barrés"
+    ],
+    tip:"💡 Si tu révises 15 hizbs, le cercle se base sur 15 — pas sur 60. Chaque boucle est unique.",
+    phone:`
+      <div class="mh"><div class="mh-logo">✦</div><div><div class="mh-brand">Wirdi<span>App</span></div><div class="mh-sub">مراجعة القرآن الكريم</div></div><div class="mh-bell">🔔</div></div>
+      <div class="mt"><div class="mt-tab">Semaine</div><div class="mt-tab on">Programme</div><div class="mt-tab">Historique</div></div>
+      <div class="mb">
+        <div class="circ-card">
+          <div class="circ-title">Ma boucle personnelle</div>
+          <div class="circ-wrap">
+            <svg width="90" height="90" viewBox="0 0 160 160">
+              <circle cx="80" cy="80" r="68" fill="none" stroke="#EBF7F1" stroke-width="12"/>
+              <circle cx="80" cy="80" r="50" fill="none" stroke="#FDF6EB" stroke-width="12"/>
+              <circle cx="80" cy="80" r="68" fill="none" stroke="#3D7A5E" stroke-width="12"
+                stroke-dasharray="427" stroke-dashoffset="213" stroke-linecap="round" transform="rotate(-90 80 80)"/>
+              <circle cx="80" cy="80" r="50" fill="none" stroke="#C8A96E" stroke-width="12"
+                stroke-dasharray="314" stroke-dashoffset="209" stroke-linecap="round" transform="rotate(-90 80 80)"/>
+            </svg>
+            <div class="circ-center"><div class="circ-pct">33%</div><div class="circ-sub">5/15</div></div>
+          </div>
+          <div class="circ-legend">
+            <span><span class="cdot h"></span>Hizbs · 3/12</span>
+            <span><span class="cdot s"></span>Sourates · 2/3</span>
+          </div>
+        </div>
+        <div class="db">
+          <div class="db-l">Lundi <span class="dtag">2/2</span><span class="ln"></span></div>
+          <div class="pills"><span class="pill h done">✓ Hizb 3</span><span class="pill h done">✓ Hizb 4</span></div>
+        </div>
+        <div class="db">
+          <div class="db-l">Mardi <span class="dtag p">1/2</span><span class="ln"></span></div>
+          <div class="pills"><span class="pill h done">✓ Hizb 5</span><span class="pill s">Al-Kahf (18)</span></div>
+        </div>
+        <div class="db">
+          <div class="db-l">Mercredi<span class="ln"></span></div>
+          <div class="pills"><span class="pill h">Hizb 6</span><span class="pill h">Hizb 7</span></div>
+        </div>
+      </div>
+    `
+  },
+  {
+    eyebrow:"Onglet 3", title:"Historique",
+    desc:"Chaque lundi, ta semaine repart à zéro — mais rien n'est effacé. L'historique garde la mémoire de toutes tes semaines : combien de révisions tu as faites, si la boucle était complète ou partielle.",
+    list:[
+      "Chaque carte = <strong>une semaine</strong> avec ses dates et son score de révision",
+      "Badge <strong>« Complète »</strong> = tous tes items ont été cochés au moins une fois",
+      "Badge <strong>« Partielle »</strong> = il en reste des non cochés",
+      "Les <strong>7 cercles</strong> montrent quels jours ont été entièrement validés"
+    ],
+    tip:"💡 L'objectif est d'avoir un maximum de semaines 'Complètes'. L'historique te montre ta régularité sur le long terme.",
+    phone:`
+      <div class="mh"><div class="mh-logo">✦</div><div><div class="mh-brand">Wirdi<span>App</span></div><div class="mh-sub">مراجعة القرآن الكريم</div></div></div>
+      <div class="mt"><div class="mt-tab">Semaine</div><div class="mt-tab">Programme</div><div class="mt-tab on">Historique</div></div>
+      <div class="mb">
+        <div class="hw">
+          <div class="hw-h"><div><div class="hw-l">Cette semaine</div><div class="hw-s">3 / 10 révisions validées</div></div><span class="hbadge cur">En cours</span></div>
+          <div class="hdots"><div class="hdot done">L</div><div class="hdot">M</div><div class="hdot">M</div><div class="hdot">J</div><div class="hdot">V</div><div class="hdot">S</div><div class="hdot">D</div></div>
+        </div>
+        <div class="hw">
+          <div class="hw-h"><div><div class="hw-l">23 juin – 29 juin</div><div class="hw-s">10 / 10 révisions validées</div></div><span class="hbadge c">Complète</span></div>
+          <div class="hdots"><div class="hdot done">L</div><div class="hdot done">M</div><div class="hdot done">M</div><div class="hdot done">J</div><div class="hdot done">V</div><div class="hdot done">S</div><div class="hdot done">D</div></div>
+        </div>
+        <div class="hw">
+          <div class="hw-h"><div><div class="hw-l">16 juin – 22 juin</div><div class="hw-s">7 / 10 révisions validées</div></div><span class="hbadge p">Partielle</span></div>
+          <div class="hdots"><div class="hdot done">L</div><div class="hdot done">M</div><div class="hdot">M</div><div class="hdot done">J</div><div class="hdot done">V</div><div class="hdot">S</div><div class="hdot">D</div></div>
+        </div>
+        <div class="hw">
+          <div class="hw-h"><div><div class="hw-l">9 juin – 15 juin</div><div class="hw-s">10 / 10 révisions validées</div></div><span class="hbadge c">Complète</span></div>
+          <div class="hdots"><div class="hdot done">L</div><div class="hdot done">M</div><div class="hdot done">M</div><div class="hdot done">J</div><div class="hdot done">V</div><div class="hdot done">S</div><div class="hdot done">D</div></div>
+        </div>
+      </div>
+    `
+  },
+  {
+    eyebrow:"Bonus", title:"Rappel quotidien",
+    desc:"La cloche 🔔 en haut de l'app permet d'activer un rappel chaque jour à l'heure de ton choix — pour ne jamais oublier ta séance de révision.",
+    list:[
+      "Tape sur la <strong>cloche 🔔</strong> en haut à droite",
+      "Autorise les <strong>notifications</strong> quand ton téléphone le demande",
+      "Choisis l'<strong>heure de rappel</strong> qui te convient",
+      "Tu peux <strong>tester</strong> une notification immédiatement pour vérifier"
+    ],
+    tip:"💡 Sur iPhone, les notifications fonctionnent uniquement si l'app est installée sur l'écran d'accueil via Safari.",
+    phone:`
+      <div class="mh"><div class="mh-logo">✦</div><div><div class="mh-brand">Wirdi<span>App</span></div><div class="mh-sub">مراجعة القرآن الكريم</div></div><div class="mh-bell" style="margin-left:auto;background:rgba(200,169,110,.25);border-radius:8px;padding:4px 7px;border:1px solid rgba(200,169,110,.4);">🔔</div></div>
+      <div class="mt"><div class="mt-tab on">Semaine</div><div class="mt-tab">Programme</div><div class="mt-tab">Historique</div></div>
+      <div class="mb" style="padding-top:12px;">
+        <div class="np">
+          <div class="np-t">Rappel quotidien</div>
+          <div class="np-s">Reçois une notification chaque jour pour te rappeler ta séance de révision du Coran.</div>
+          <div class="np-st"><div class="np-dot"></div>Notifications activées</div>
+          <div class="np-time"><span class="np-time-l">Heure du rappel</span><span class="np-time-v">08:00</span></div>
+          <div class="np-btn">Enregistrer l'heure</div>
+          <div class="np-btn2">Tester la notification</div>
+        </div>
+      </div>
+    `
+  }
+];
+
+let cur = 0;
+const nav = document.getElementById('stepnav');
+const stage = document.getElementById('stage');
+const dotsEl = document.getElementById('dots');
+const prev = document.getElementById('prev');
+const next = document.getElementById('next');
+
+function render(){
+  nav.innerHTML = slides.map((s,i)=>`<button data-i="${i}" class="${i===cur?'active':''}">${s.title}</button>`).join('');
+  dotsEl.innerHTML = slides.map((_,i)=>`<span class="${i===cur?'active':''}"></span>`).join('');
+  stage.innerHTML = slides.map((s,i)=>`
+    <div class="slide ${i===cur?'active':''}">
+      <div class="phone-col"><div class="phone"><div class="screen">${s.phone}</div></div></div>
+      <div class="tc">
+        <div class="tc-ey">${s.eyebrow}</div>
+        <div class="tc-title">${s.title}</div>
+        <div class="tc-desc">${s.desc}</div>
+        <ul class="tc-list">${s.list.map((l,j)=>`<li><span class="num">${j+1}</span><span>${l}</span></li>`).join('')}</ul>
+        <div class="tip">${s.tip}</div>
+      </div>
+    </div>
+  `).join('');
+  prev.disabled = cur===0;
+  next.disabled = cur===slides.length-1;
+  next.textContent = cur===slides.length-1 ? "Fin du guide ✓" : "Suivant →";
+  nav.querySelectorAll('button').forEach(b=>b.onclick=()=>{cur=+b.dataset.i;render();});
+}
+prev.onclick=()=>{if(cur>0){cur--;render();}};
+next.onclick=()=>{if(cur<slides.length-1){cur++;render();}};
+render();
+</script>
+</body>
+</html>
