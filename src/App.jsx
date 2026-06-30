@@ -70,9 +70,9 @@ const SOURATES = [
 
 // ─── Storage ──────────────────────────────────────────────────────────────────
 function load() {
-  try { return JSON.parse(localStorage.getItem("wirdi-v4") || "{}"); } catch { return {}; }
+  try { return JSON.parse(localStorage.getItem("wirdi-v5") || "{}"); } catch { return {}; }
 }
-function save(d) { localStorage.setItem("wirdi-v4", JSON.stringify(d)); }
+function save(d) { localStorage.setItem("wirdi-v5", JSON.stringify(d)); }
 
 function getWeekKey() {
   const now = new Date();
@@ -96,11 +96,19 @@ function weekLabel(key) {
   return `${fmt(monday)} – ${fmt(sunday)} ${y}`;
 }
 
+// An item is "done" if itemDone[dayIdx] contains its id
 function isWeekComplete(weekData) {
   const sch = weekData?.schedule || {};
-  const done = weekData?.done || [];
-  const planned = Object.keys(sch).filter(i => (sch[i]||[]).length > 0).map(Number);
-  return planned.length > 0 && planned.every(i => done.includes(i));
+  const itemDone = weekData?.itemDone || {};
+  const allItems = Object.entries(sch).flatMap(([day, items]) => (items||[]).map(it => [day, it.id]));
+  if (allItems.length === 0) return false;
+  return allItems.every(([day, id]) => (itemDone[day]||[]).includes(id));
+}
+
+function dayProgress(items, doneIds) {
+  const total = items.length;
+  const done = items.filter(it => doneIds.includes(it.id)).length;
+  return { total, done };
 }
 
 // ─── Logo ─────────────────────────────────────────────────────────────────────
@@ -246,37 +254,44 @@ body{background:#F0F8F4;color:#1A3028;font-family:'Inter',sans-serif;-webkit-fon
   color:#6AAF8B;margin-bottom:8px;display:flex;align-items:center;gap:8px;}
 .dpb-label .line{flex:1;height:1px;background:#D6EDE3;}
 .dpb-done-tag{font-size:9px;background:#3D7A5E;color:#fff;padding:2px 7px;border-radius:10px;}
+.dpb-done-tag.partial{background:#C8A96E;}
 .dpb-pills{display:flex;flex-wrap:wrap;gap:6px;}
 .dpb-pill{border-radius:20px;padding:5px 13px;font-size:12px;font-weight:600;}
 .dpb-pill.hizb{background:#EBF7F1;color:#2D5243;border:1px solid #B8DECA;}
 .dpb-pill.sourate{background:#FDF6EB;color:#8B6914;border:1px solid #EDD9A3;}
+.dpb-pill.pill-done{opacity:0.55;text-decoration:line-through;}
 .dpb-empty{font-size:12px;color:#B8DECA;font-style:italic;}
 .sec-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
   color:#6AAF8B;margin-bottom:14px;}
 
-/* ── Khatma card ── */
-.khatma-card{background:#fff;border:1.5px solid #D6EDE3;border-radius:16px;
-  padding:20px;margin-bottom:20px;box-shadow:0 2px 12px rgba(26,48,40,.06);}
-.khatma-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
-.khatma-title{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#6AAF8B;}
-.khatma-count-wrap{display:flex;align-items:baseline;gap:6px;}
-.khatma-count{font-size:48px;font-weight:300;color:#1A3028;line-height:1;font-variant-numeric:tabular-nums;}
-.khatma-unit{font-size:13px;color:#8AB8A4;font-weight:500;}
-.khatma-btn-row{display:flex;gap:8px;}
-.khatma-btn{flex:1;padding:11px;border-radius:10px;border:none;font-family:'Inter',sans-serif;
-  font-size:13px;font-weight:700;cursor:pointer;letter-spacing:.04em;transition:all .15s;}
-.khatma-btn.add{background:#3D7A5E;color:#fff;}
-.khatma-btn.add:hover{background:#2D5243;}
-.khatma-btn.sub{background:#EBF7F1;color:#3D7A5E;border:1.5px solid #B8DECA;}
-.khatma-btn.sub:hover{background:#D6EDE3;}
-.khatma-log{margin-top:16px;border-top:1px solid #EBF7F1;padding-top:14px;}
-.khatma-log-title{font-size:11px;font-weight:600;color:#B8DECA;margin-bottom:10px;letter-spacing:.05em;text-transform:uppercase;}
-.khatma-entry{display:flex;justify-content:space-between;align-items:center;
-  padding:7px 0;border-bottom:1px solid #F5FAF7;}
-.khatma-entry:last-child{border-bottom:none;}
-.khatma-entry-num{font-size:13px;font-weight:700;color:#3D7A5E;}
-.khatma-entry-date{font-size:12px;color:#B8DECA;}
-.khatma-empty{font-size:12px;color:#B8DECA;font-style:italic;text-align:center;padding:12px 0;}
+/* ── Item checkbox ── */
+.assigned-item.item-done{opacity:0.6;}
+.item-check{width:24px;height:24px;border-radius:7px;border:1.5px solid #C8DFD5;background:#fff;
+  cursor:pointer;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;transition:all .15s;
+  display:flex;align-items:center;justify-content:center;}
+.item-check.checked{background:#3D7A5E;border-color:#3D7A5E;}
+.item-check:hover{border-color:#3D7A5E;}
+.ai-label{transition:color .15s;}
+.item-done .ai-label{text-decoration:line-through;color:#B8DECA;}
+
+/* Day circle partial state */
+.dp-btn.partial{border-color:#C8A96E;color:#C8A96E;background:#FDF6EB;}
+
+/* ── Progress circle card ── */
+.circle-card{background:#fff;border:1.5px solid #D6EDE3;border-radius:18px;
+  padding:24px;margin-bottom:20px;box-shadow:0 2px 12px rgba(26,48,40,.06);
+  display:flex;flex-direction:column;align-items:center;}
+.circle-title{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:#6AAF8B;margin-bottom:18px;}
+.circle-wrap{position:relative;display:flex;align-items:center;justify-content:center;}
+.circle-center{position:absolute;display:flex;flex-direction:column;align-items:center;}
+.circle-pct{font-size:30px;font-weight:300;color:#1A3028;line-height:1;font-variant-numeric:tabular-nums;}
+.circle-sub{font-size:11px;color:#8AB8A4;margin-top:4px;font-weight:600;}
+.circle-legend{display:flex;gap:18px;margin-top:18px;}
+.circle-legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:#6AAF8B;font-weight:600;}
+.circle-legend-item .dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+.circle-legend-item .dot.hizb{background:#3D7A5E;}
+.circle-legend-item .dot.sourate{background:#C8A96E;}
 
 /* ── Historique ── */
 .hist-view{padding:20px;}
@@ -380,17 +395,17 @@ export default function App() {
   const timerRef = useRef(null);
 
   const weekKey = getWeekKey();
-  const thisWeek = data.weeks?.[weekKey] || { done:[], schedule:{} };
+  const thisWeek = data.weeks?.[weekKey] || { itemDone:{}, schedule:{} };
   const schedule = thisWeek.schedule || {};
-  const done = thisWeek.done || [];
+  const itemDone = thisWeek.itemDone || {}; // { [dayIdx]: [itemId, itemId...] }
 
   function persist(next) { setData(next); save(next); }
 
   function updateWeek(fn) {
-    const prev = data.weeks?.[weekKey] || { done:[], schedule:{} };
+    const prev = data.weeks?.[weekKey] || { itemDone:{}, schedule:{} };
     const updated = fn(JSON.parse(JSON.stringify(prev)));
     const newData = { ...data, weeks: { ...(data.weeks||{}), [weekKey]: updated } };
-    // Auto-detect khatma completion
+    // Auto-detect full loop completion (all assigned items across the week validated)
     if (isWeekComplete(updated) && !isWeekComplete(prev)) {
       triggerKhatmaPrompt(newData);
     }
@@ -409,13 +424,14 @@ export default function App() {
     timerRef.current = setTimeout(()=>setToast(t=>({...t,on:false})), 2200);
   }
 
-  function toggleDone(idx) {
+  function toggleItemDone(dayIdx, itemId) {
     updateWeek(w => {
-      const d=w.done||[];
-      w.done=d.includes(idx)?d.filter(x=>x!==idx):[...d,idx];
+      const id = w.itemDone || {};
+      const list = id[dayIdx] || [];
+      id[dayIdx] = list.includes(itemId) ? list.filter(x=>x!==itemId) : [...list, itemId];
+      w.itemDone = id;
       return w;
     });
-    flash(done.includes(idx)?"Décoché":"Séance validée ✓");
   }
 
   function addToDay(dayIdx) {
@@ -433,26 +449,10 @@ export default function App() {
     updateWeek(w=>{
       const sch=w.schedule||{};
       sch[dayIdx]=(sch[dayIdx]||[]).filter(x=>x.id!==itemId);
-      w.schedule=sch; return w;
+      const id=w.itemDone||{};
+      id[dayIdx]=(id[dayIdx]||[]).filter(x=>x!==itemId);
+      w.schedule=sch; w.itemDone=id; return w;
     });
-  }
-
-  // ── Khatma ──
-  const khatmas = data.khatmas || [];
-
-  function addKhatma() {
-    const entry = { id:Date.now(), date: new Date().toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"}), n: khatmas.length+1 };
-    const next = {...data, khatmas:[...khatmas, entry]};
-    persist(next);
-    setConfetti(true);
-    setTimeout(()=>setConfetti(false), 2500);
-    flash(`Khatma n°${entry.n} enregistrée ! بارك الله فيك`);
-  }
-
-  function removeLastKhatma() {
-    if (khatmas.length===0) return;
-    persist({...data, khatmas: khatmas.slice(0,-1)});
-    flash("Dernière khatma supprimée");
   }
 
   // ── Notifications ──
@@ -485,9 +485,27 @@ export default function App() {
     const s=SOURATES.find(s=>s.id===item.id);return s?`P. ${s.pages}`:"";
   }
 
-  const daysWithContent = DAYS.map((_,i)=>(schedule[i]?.length||0)>0);
-  const daysPlanned = daysWithContent.filter(Boolean).length;
-  const daysDone = done.filter(i=>daysWithContent[i]).length;
+  // Total items planned this week & how many validated (across all days)
+  const allPlannedItems = Object.entries(schedule).flatMap(([day, items]) => (items||[]).map(it => ({...it, day})));
+  const totalPlanned = allPlannedItems.length;
+  const totalValidated = allPlannedItems.filter(it => (itemDone[it.day]||[]).includes(it.id)).length;
+
+  // Unique hizbs/sourates validated this week, split by type (for the dual progress circle)
+  const validatedHizbIds = new Set();
+  const validatedSourateIds = new Set();
+  allPlannedItems.forEach(it => {
+    if ((itemDone[it.day]||[]).includes(it.id)) {
+      if (it.type==="hizb") validatedHizbIds.add(it.id);
+      else validatedSourateIds.add(it.id);
+    }
+  });
+  const hizbValidatedCount = validatedHizbIds.size;
+  const sourateValidatedCount = validatedSourateIds.size;
+  const hizbPercent = Math.round((hizbValidatedCount/HIZBS.length)*100);
+  const souratePercent = Math.round((sourateValidatedCount/SOURATES.length)*100);
+  const TOTAL_UNITS = HIZBS.length + SOURATES.length; // 60 + 114 = 174
+  const validatedCount = hizbValidatedCount + sourateValidatedCount;
+  const loopPercent = TOTAL_UNITS ? Math.round((validatedCount/TOTAL_UNITS)*100) : 0;
 
   function switchType(t) { setAddType(t); setAddVal(t==="hizb"?HIZBS[0].id:SOURATES[0].id); }
   const options = addType==="hizb" ? HIZBS : SOURATES;
@@ -560,17 +578,20 @@ export default function App() {
         {tab==="semaine" && (<>
           <div className="week-strip">
             {DAYS_SHORT.map((d,i)=>{
-              const hasC=(schedule[i]?.length||0)>0;
-              const isDone=done.includes(i);
+              const items = schedule[i]||[];
+              const { total, done: nDone } = dayProgress(items, itemDone[i]||[]);
+              const hasC = total>0;
+              const isFullyDone = hasC && nDone===total;
+              const isPartial = hasC && nDone>0 && nDone<total;
               const isToday=i===todayIdx();
               const isSel=i===selectedDay;
               return (
                 <div className="day-pill" key={i}>
                   <span className="dp-label">{d}</span>
                   <button
-                    className={["dp-btn",hasC?"has-content":"",isDone?"done":"",isToday?"today-ring":"",isSel&&!isDone?"selected-ring":""].filter(Boolean).join(" ")}
+                    className={["dp-btn",hasC?"has-content":"",isFullyDone?"done":"",isPartial?"partial":"",isToday?"today-ring":"",isSel&&!isFullyDone?"selected-ring":""].filter(Boolean).join(" ")}
                     onClick={()=>setSelectedDay(i)}
-                  >{isDone?"✓":hasC?"·":""}</button>
+                  >{isFullyDone?"✓":hasC?`${nDone}/${total}`:""}</button>
                 </div>
               );
             })}
@@ -579,37 +600,44 @@ export default function App() {
           <div className="loop-wrap">
             <div className="loop-header">
               <span className="loop-title">Boucle de la semaine</span>
-              <span className="loop-fraction">{daysDone} / {daysPlanned||7}</span>
+              <span className="loop-fraction">{totalValidated} / {totalPlanned||0}</span>
             </div>
             <div className="loop-track">
-              <div className="loop-fill" style={{width:`${daysPlanned?(daysDone/daysPlanned)*100:0}%`}}/>
+              <div className="loop-fill" style={{width:`${totalPlanned?(totalValidated/totalPlanned)*100:0}%`}}/>
             </div>
           </div>
 
           <div className="day-detail">
             <div className="dd-head">
               <span className="dd-dayname">{DAYS[selectedDay]}</span>
-              <button className={`dd-done-btn ${done.includes(selectedDay)?"unmark":"mark"}`}
-                onClick={()=>toggleDone(selectedDay)}>
-                {done.includes(selectedDay)?"✓ Validé":"Valider la séance"}
-              </button>
+              {(schedule[selectedDay]||[]).length>0 && (
+                <span style={{fontSize:11,fontWeight:700,color:"#6AAF8B"}}>
+                  {dayProgress(schedule[selectedDay]||[], itemDone[selectedDay]||[]).done} / {dayProgress(schedule[selectedDay]||[], itemDone[selectedDay]||[]).total} validés
+                </span>
+              )}
             </div>
             {(schedule[selectedDay]||[]).length===0?(
               <div className="empty-day">Aucune révision assignée — ajoutez ci-dessous.</div>
             ):(
               <div className="assigned-list">
-                {(schedule[selectedDay]||[]).map(item=>(
-                  <div className="assigned-item" key={item.id}>
-                    <div style={{flex:1}}>
-                      <div style={{display:"flex",alignItems:"center",gap:8}}>
-                        <span className="ai-label">{getItemLabel(item)}</span>
-                        <span className={`ai-badge ${item.type}`}>{item.type==="hizb"?"Hizb":"Sourate"}</span>
+                {(schedule[selectedDay]||[]).map(item=>{
+                  const isDone = (itemDone[selectedDay]||[]).includes(item.id);
+                  return (
+                    <div className={`assigned-item${isDone?" item-done":""}`} key={item.id}>
+                      <button className={`item-check${isDone?" checked":""}`} onClick={()=>toggleItemDone(selectedDay,item.id)}>
+                        {isDone?"✓":""}
+                      </button>
+                      <div style={{flex:1}}>
+                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          <span className="ai-label">{getItemLabel(item)}</span>
+                          <span className={`ai-badge ${item.type}`}>{item.type==="hizb"?"Hizb":"Sourate"}</span>
+                        </div>
+                        <div className="ai-sub">{getItemSub(item)}</div>
                       </div>
-                      <div className="ai-sub">{getItemSub(item)}</div>
+                      <button className="ai-del" onClick={()=>removeFromDay(selectedDay,item.id)}>×</button>
                     </div>
-                    <button className="ai-del" onClick={()=>removeFromDay(selectedDay,item.id)}>×</button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
             <div className="add-row">
@@ -628,70 +656,67 @@ export default function App() {
         {/* ════ PROGRAMME ════ */}
         {tab==="programme" && (
           <div className="prog-view">
-            {/* Khatma */}
-            <div className="khatma-card">
-              <div className="khatma-top">
-                <div>
-                  <div className="khatma-title">Compteur de Khatma</div>
-                  <div style={{fontSize:11,color:"#B8DECA",marginTop:2}}>Chaque révision complète du programme</div>
-                </div>
-                <div className="khatma-count-wrap">
-                  <span className="khatma-count">{khatmas.length}</span>
-                  <span className="khatma-unit">×</span>
-                </div>
-              </div>
-              <div className="khatma-btn-row">
-                <button className="khatma-btn add" onClick={addKhatma}>+ Ajouter une khatma</button>
-                {khatmas.length>0&&<button className="khatma-btn sub" onClick={removeLastKhatma}>−</button>}
-              </div>
-              {khatmas.length>0&&(
-                <div className="khatma-log">
-                  <div className="khatma-log-title">Historique</div>
-                  {[...khatmas].reverse().slice(0,5).map(k=>(
-                    <div className="khatma-entry" key={k.id}>
-                      <span className="khatma-entry-num">Khatma n°{k.n}</span>
-                      <span className="khatma-entry-date">{k.date}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {khatmas.length===0&&<div className="khatma-empty">Aucune khatma enregistrée pour l'instant</div>}
-            </div>
 
-            {/* Loop overview */}
-            <div className="loop-overview">
-              <div className="lo-title">Boucle hebdomadaire — semaine en cours</div>
-              <div className="lo-grid">
-                {DAYS_SHORT.map((d,i)=>{
-                  const hasC=(schedule[i]?.length||0)>0;
-                  const isDone=done.includes(i);
-                  return (
-                    <div className="lo-day" key={i}>
-                      <span className="lo-d-label">{d}</span>
-                      <span className="lo-d-count">{schedule[i]?.length||0}</span>
-                      <div className={`lo-d-dot${isDone&&hasC?" done":""}`}/>
-                    </div>
-                  );
-                })}
+            {/* Loop progress circle */}
+            <div className="circle-card">
+              <div className="circle-title">Avancement de la boucle</div>
+              <div className="circle-wrap">
+                <svg viewBox="0 0 160 160" width="160" height="160">
+                  {/* Track - hizb ring (outer) */}
+                  <circle cx="80" cy="80" r="68" fill="none" stroke="#EBF7F1" strokeWidth="12"/>
+                  {/* Track - sourate ring (inner) */}
+                  <circle cx="80" cy="80" r="50" fill="none" stroke="#FDF6EB" strokeWidth="12"/>
+                  {/* Hizb progress (green, outer) */}
+                  <circle
+                    cx="80" cy="80" r="68" fill="none" stroke="#3D7A5E" strokeWidth="12"
+                    strokeDasharray={`${2*Math.PI*68}`}
+                    strokeDashoffset={`${2*Math.PI*68*(1-hizbPercent/100)}`}
+                    strokeLinecap="round"
+                    transform="rotate(-90 80 80)"
+                    style={{transition:"stroke-dashoffset .6s cubic-bezier(.4,0,.2,1)"}}
+                  />
+                  {/* Sourate progress (gold, inner) */}
+                  <circle
+                    cx="80" cy="80" r="50" fill="none" stroke="#C8A96E" strokeWidth="12"
+                    strokeDasharray={`${2*Math.PI*50}`}
+                    strokeDashoffset={`${2*Math.PI*50*(1-souratePercent/100)}`}
+                    strokeLinecap="round"
+                    transform="rotate(-90 80 80)"
+                    style={{transition:"stroke-dashoffset .6s cubic-bezier(.4,0,.2,1)"}}
+                  />
+                </svg>
+                <div className="circle-center">
+                  <span className="circle-pct">{loopPercent}%</span>
+                  <span className="circle-sub">{validatedCount} / {TOTAL_UNITS}</span>
+                </div>
+              </div>
+              <div className="circle-legend">
+                <span className="circle-legend-item"><span className="dot hizb"/>Hizbs · {hizbValidatedCount}/60</span>
+                <span className="circle-legend-item"><span className="dot sourate"/>Sourates · {sourateValidatedCount}/114</span>
               </div>
             </div>
 
             <div className="sec-label">Programme jour par jour</div>
             {DAYS.map((day,i)=>{
               const items=schedule[i]||[];
-              const isDone=done.includes(i)&&items.length>0;
+              const { total, done: nDone } = dayProgress(items, itemDone[i]||[]);
               return (
                 <div className="dpb-block" key={i}>
                   <div className="dpb-label">
                     {day}
-                    {isDone&&<span className="dpb-done-tag">✓ fait</span>}
+                    {total>0&&<span className={`dpb-done-tag${nDone===total?"":" partial"}`}>{nDone}/{total}</span>}
                     <span className="line"/>
                   </div>
                   {items.length===0?<span className="dpb-empty">Aucune révision planifiée</span>:(
                     <div className="dpb-pills">
-                      {items.map(item=>(
-                        <span key={item.id} className={`dpb-pill ${item.type}`}>{getItemLabel(item)}</span>
-                      ))}
+                      {items.map(item=>{
+                        const isDone=(itemDone[i]||[]).includes(item.id);
+                        return (
+                          <span key={item.id} className={`dpb-pill ${item.type}${isDone?" pill-done":""}`}>
+                            {isDone&&"✓ "}{getItemLabel(item)}
+                          </span>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -706,14 +731,21 @@ export default function App() {
             {allWeeks.length===0?(
               <div className="hist-empty">
                 Aucun historique pour l'instant.<br/>
-                Commence à valider tes séances pour voir l'historique apparaître ici.
+                Commence à valider tes révisions pour voir l'historique apparaître ici.
               </div>
             ):allWeeks.map(([wk, wd])=>{
               const isCurrent = wk===weekKey;
               const complete = isWeekComplete(wd);
               const sch = wd.schedule||{};
-              const dn = wd.done||[];
+              const id = wd.itemDone||{};
               const planned = DAYS.map((_,i)=>(sch[i]?.length||0)>0);
+              const dayFull = DAYS.map((_,i)=>{
+                const items = sch[i]||[];
+                if (items.length===0) return false;
+                return items.every(it=>(id[i]||[]).includes(it.id));
+              });
+              const totalItems = Object.values(sch).flat().length;
+              const totalDone = Object.entries(sch).reduce((acc,[day,items])=>acc+(items||[]).filter(it=>(id[day]||[]).includes(it.id)).length,0);
               const badge = isCurrent?"current":complete?"complete":"partial";
               const badgeLabel = isCurrent?"En cours":complete?"Complète":"Partielle";
               return (
@@ -722,14 +754,14 @@ export default function App() {
                     <div>
                       <div className="hist-week-label">{isCurrent?"Cette semaine":weekLabel(wk)}</div>
                       <div style={{fontSize:11,color:"#B8DECA",marginTop:2}}>
-                        {dn.filter(i=>planned[i]).length} / {planned.filter(Boolean).length} jours validés
+                        {totalDone} / {totalItems} révisions validées
                       </div>
                     </div>
                     <span className={`hist-week-badge ${badge}`}>{badgeLabel}</span>
                   </div>
                   <div className="hist-dots">
                     {DAYS_SHORT.map((d,i)=>(
-                      <div key={i} className={["hist-dot",dn.includes(i)&&planned[i]?"done":"",i===todayIdx()&&isCurrent?"today":""].filter(Boolean).join(" ")}>
+                      <div key={i} className={["hist-dot",dayFull[i]?"done":"",i===todayIdx()&&isCurrent?"today":""].filter(Boolean).join(" ")}>
                         {d[0]}
                       </div>
                     ))}
