@@ -490,22 +490,29 @@ export default function App() {
   const totalPlanned = allPlannedItems.length;
   const totalValidated = allPlannedItems.filter(it => (itemDone[it.day]||[]).includes(it.id)).length;
 
-  // Unique hizbs/sourates validated this week, split by type (for the dual progress circle)
+  // Personal loop = unique hizbs/sourates assigned across the week (the user's own boucle)
+  const plannedHizbIds = new Set();
+  const plannedSourateIds = new Set();
   const validatedHizbIds = new Set();
   const validatedSourateIds = new Set();
   allPlannedItems.forEach(it => {
+    if (it.type==="hizb") plannedHizbIds.add(it.id);
+    else plannedSourateIds.add(it.id);
     if ((itemDone[it.day]||[]).includes(it.id)) {
       if (it.type==="hizb") validatedHizbIds.add(it.id);
       else validatedSourateIds.add(it.id);
     }
   });
+
+  const hizbPlanned = plannedHizbIds.size;
+  const souratePlanned = plannedSourateIds.size;
   const hizbValidatedCount = validatedHizbIds.size;
   const sourateValidatedCount = validatedSourateIds.size;
-  const hizbPercent = Math.round((hizbValidatedCount/HIZBS.length)*100);
-  const souratePercent = Math.round((sourateValidatedCount/SOURATES.length)*100);
-  const TOTAL_UNITS = HIZBS.length + SOURATES.length; // 60 + 114 = 174
+  const hizbPercent = hizbPlanned ? Math.round((hizbValidatedCount/hizbPlanned)*100) : 0;
+  const souratePercent = souratePlanned ? Math.round((sourateValidatedCount/souratePlanned)*100) : 0;
+  const totalLoopUnits = hizbPlanned + souratePlanned;
   const validatedCount = hizbValidatedCount + sourateValidatedCount;
-  const loopPercent = TOTAL_UNITS ? Math.round((validatedCount/TOTAL_UNITS)*100) : 0;
+  const loopPercent = totalLoopUnits ? Math.round((validatedCount/totalLoopUnits)*100) : 0;
 
   function switchType(t) { setAddType(t); setAddVal(t==="hizb"?HIZBS[0].id:SOURATES[0].id); }
   const options = addType==="hizb" ? HIZBS : SOURATES;
@@ -659,41 +666,53 @@ export default function App() {
 
             {/* Loop progress circle */}
             <div className="circle-card">
-              <div className="circle-title">Avancement de la boucle</div>
-              <div className="circle-wrap">
-                <svg viewBox="0 0 160 160" width="160" height="160">
-                  {/* Track - hizb ring (outer) */}
-                  <circle cx="80" cy="80" r="68" fill="none" stroke="#EBF7F1" strokeWidth="12"/>
-                  {/* Track - sourate ring (inner) */}
-                  <circle cx="80" cy="80" r="50" fill="none" stroke="#FDF6EB" strokeWidth="12"/>
-                  {/* Hizb progress (green, outer) */}
-                  <circle
-                    cx="80" cy="80" r="68" fill="none" stroke="#3D7A5E" strokeWidth="12"
-                    strokeDasharray={`${2*Math.PI*68}`}
-                    strokeDashoffset={`${2*Math.PI*68*(1-hizbPercent/100)}`}
-                    strokeLinecap="round"
-                    transform="rotate(-90 80 80)"
-                    style={{transition:"stroke-dashoffset .6s cubic-bezier(.4,0,.2,1)"}}
-                  />
-                  {/* Sourate progress (gold, inner) */}
-                  <circle
-                    cx="80" cy="80" r="50" fill="none" stroke="#C8A96E" strokeWidth="12"
-                    strokeDasharray={`${2*Math.PI*50}`}
-                    strokeDashoffset={`${2*Math.PI*50*(1-souratePercent/100)}`}
-                    strokeLinecap="round"
-                    transform="rotate(-90 80 80)"
-                    style={{transition:"stroke-dashoffset .6s cubic-bezier(.4,0,.2,1)"}}
-                  />
-                </svg>
-                <div className="circle-center">
-                  <span className="circle-pct">{loopPercent}%</span>
-                  <span className="circle-sub">{validatedCount} / {TOTAL_UNITS}</span>
+              <div className="circle-title">Ma boucle personnelle</div>
+              {totalLoopUnits === 0 ? (
+                <div style={{textAlign:"center",padding:"20px 0",color:"#B8DECA",fontSize:13,fontStyle:"italic",lineHeight:1.6}}>
+                  Assigne des hizbs ou sourates<br/>dans l'onglet Semaine pour<br/>voir ta boucle apparaître ici.
                 </div>
-              </div>
-              <div className="circle-legend">
-                <span className="circle-legend-item"><span className="dot hizb"/>Hizbs · {hizbValidatedCount}/60</span>
-                <span className="circle-legend-item"><span className="dot sourate"/>Sourates · {sourateValidatedCount}/114</span>
-              </div>
+              ) : (
+                <>
+                  <div className="circle-wrap">
+                    <svg viewBox="0 0 160 160" width="160" height="160">
+                      <circle cx="80" cy="80" r="68" fill="none" stroke="#EBF7F1" strokeWidth="12"/>
+                      {souratePlanned > 0 && <circle cx="80" cy="80" r="50" fill="none" stroke="#FDF6EB" strokeWidth="12"/>}
+                      {hizbPlanned > 0 && (
+                        <circle cx="80" cy="80" r="68" fill="none" stroke="#3D7A5E" strokeWidth="12"
+                          strokeDasharray={`${2*Math.PI*68}`}
+                          strokeDashoffset={`${2*Math.PI*68*(1-hizbPercent/100)}`}
+                          strokeLinecap="round" transform="rotate(-90 80 80)"
+                          style={{transition:"stroke-dashoffset .6s cubic-bezier(.4,0,.2,1)"}}
+                        />
+                      )}
+                      {souratePlanned > 0 && (
+                        <circle cx="80" cy="80" r="50" fill="none" stroke="#C8A96E" strokeWidth="12"
+                          strokeDasharray={`${2*Math.PI*50}`}
+                          strokeDashoffset={`${2*Math.PI*50*(1-souratePercent/100)}`}
+                          strokeLinecap="round" transform="rotate(-90 80 80)"
+                          style={{transition:"stroke-dashoffset .6s cubic-bezier(.4,0,.2,1)"}}
+                        />
+                      )}
+                    </svg>
+                    <div className="circle-center">
+                      <span className="circle-pct">{loopPercent}%</span>
+                      <span className="circle-sub">{validatedCount} / {totalLoopUnits}</span>
+                    </div>
+                  </div>
+                  <div className="circle-legend">
+                    {hizbPlanned > 0 && (
+                      <span className="circle-legend-item">
+                        <span className="dot hizb"/>Hizbs · {hizbValidatedCount}/{hizbPlanned}
+                      </span>
+                    )}
+                    {souratePlanned > 0 && (
+                      <span className="circle-legend-item">
+                        <span className="dot sourate"/>Sourates · {sourateValidatedCount}/{souratePlanned}
+                      </span>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="sec-label">Programme jour par jour</div>
